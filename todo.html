@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Advanced To-Do App</title>
+
+<style>
+:root{
+    --primary:#4CAF50;
+    --bg:#f4f6f8;
+    --card:#ffffff;
+    --text:#333;
+}
+.dark{
+    --primary:#00ffcc;
+    --bg:#111;
+    --card:#1e1e1e;
+    --text:#fff;
+}
+
+body{
+    margin:0;
+    font-family:Arial, sans-serif;
+    background:var(--bg);
+    color:var(--text);
+    display:flex;
+    justify-content:center;
+}
+
+.container{
+    width:95%;
+    max-width:600px;
+    margin-top:40px;
+}
+
+h1{
+    text-align:center;
+}
+
+.top-bar{
+    display:flex;
+    justify-content:space-between;
+    margin-bottom:15px;
+}
+
+input, select{
+    padding:8px;
+    border-radius:5px;
+    border:1px solid #ccc;
+}
+
+button{
+    padding:8px 12px;
+    border:none;
+    border-radius:5px;
+    cursor:pointer;
+    background:var(--primary);
+    color:white;
+    font-weight:bold;
+}
+
+.task{
+    background:var(--card);
+    padding:12px;
+    margin-bottom:10px;
+    border-radius:8px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    box-shadow:0 2px 5px rgba(0,0,0,0.1);
+}
+
+.task.completed{
+    text-decoration:line-through;
+    opacity:0.6;
+}
+
+.priority{
+    font-size:12px;
+    padding:3px 6px;
+    border-radius:4px;
+    color:white;
+}
+
+.high{background:red;}
+.medium{background:orange;}
+.low{background:green;}
+
+.filters{
+    display:flex;
+    justify-content:space-around;
+    margin:10px 0;
+}
+
+.search-box{
+    width:100%;
+    margin-bottom:10px;
+}
+
+@media(max-width:500px){
+    .task{
+        flex-direction:column;
+        align-items:flex-start;
+    }
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+    <h1>📝 Advanced To-Do</h1>
+
+    <div class="top-bar">
+        <button onclick="toggleTheme()">🌙 Theme</button>
+    </div>
+
+    <input type="text" id="taskInput" placeholder="Enter task...">
+    <input type="date" id="dueDate">
+    <select id="priority">
+        <option value="low">Low</option>
+        <option value="medium">Medium</option>
+        <option value="high">High</option>
+    </select>
+    <button onclick="addTask()">Add Task</button>
+
+    <input type="text" id="search" class="search-box" placeholder="Search task...">
+
+    <div class="filters">
+        <button onclick="filterTasks('all')">All</button>
+        <button onclick="filterTasks('completed')">Completed</button>
+        <button onclick="filterTasks('pending')">Pending</button>
+    </div>
+
+    <div id="taskList"></div>
+</div>
+
+<script>
+let tasks = JSON.parse(localStorage.getItem("tasks")) || [];
+let filter = "all";
+
+function saveTasks(){
+    localStorage.setItem("tasks", JSON.stringify(tasks));
+}
+
+function addTask(){
+    const text = document.getElementById("taskInput").value.trim();
+    const due = document.getElementById("dueDate").value;
+    const priority = document.getElementById("priority").value;
+
+    if(!text) return alert("Enter task!");
+
+    tasks.push({
+        id: Date.now(),
+        text,
+        due,
+        priority,
+        completed:false
+    });
+
+    document.getElementById("taskInput").value="";
+    renderTasks();
+    saveTasks();
+}
+
+function renderTasks(){
+    const list = document.getElementById("taskList");
+    list.innerHTML="";
+    const search = document.getElementById("search").value.toLowerCase();
+
+    tasks
+    .filter(task=>{
+        if(filter==="completed") return task.completed;
+        if(filter==="pending") return !task.completed;
+        return true;
+    })
+    .filter(task=>task.text.toLowerCase().includes(search))
+    .forEach(task=>{
+        const div=document.createElement("div");
+        div.className="task"+(task.completed?" completed":"");
+        div.innerHTML=`
+            <div>
+                <strong>${task.text}</strong><br>
+                <small>Due: ${task.due || "No date"}</small>
+                <span class="priority ${task.priority}">
+                    ${task.priority.toUpperCase()}
+                </span>
+            </div>
+            <div>
+                <button onclick="toggleComplete(${task.id})">✔</button>
+                <button onclick="editTask(${task.id})">✏</button>
+                <button onclick="deleteTask(${task.id})">🗑</button>
+            </div>
+        `;
+        list.appendChild(div);
+    });
+}
+
+function toggleComplete(id){
+    tasks = tasks.map(t=> t.id===id ? {...t, completed:!t.completed} : t);
+    saveTasks();
+    renderTasks();
+}
+
+function deleteTask(id){
+    tasks = tasks.filter(t=>t.id!==id);
+    saveTasks();
+    renderTasks();
+}
+
+function editTask(id){
+    const newText = prompt("Edit task:");
+    if(newText){
+        tasks = tasks.map(t=> t.id===id ? {...t, text:newText} : t);
+        saveTasks();
+        renderTasks();
+    }
+}
+
+function filterTasks(type){
+    filter=type;
+    renderTasks();
+}
+
+document.getElementById("search").addEventListener("input", renderTasks);
+
+function toggleTheme(){
+    document.body.classList.toggle("dark");
+}
+
+renderTasks();
+</script>
+
+</body>
+</html>
